@@ -1,6 +1,6 @@
 ---
 title: "BEE 4750/5750 Homework 2"
-author: "Your name here (your netID here)"
+author: "Caroline Herzog (crh227)"
 date: `j import Dates; Dates.Date(Dates.now())`
 weave_options:
     term: true
@@ -17,6 +17,76 @@ Pkg.instantiate()
 ```
 
 # Problem 1
+```julia
+# setting up variables
+Cs = 10   # sat. DO, [mg/L]
+ka = 0.55   # decay factor, [day^-1]
+kc = 0.35
+kn = 0.25
+U = 6   # river velocity, [km/day]
+
+# river
+Qr = 100000   # flow, [m^3/d]
+Cr = 7.5    # DO, [mg/L]
+Br = 5      # CBOD, [mg/L]
+Nr = 5      # NBOD, [mg/L]
+
+# waste stream 1
+Q1 = 10000
+C1 = 5
+B1 = 50
+N1 = 35
+
+# waste stream 2
+Q2 = 15000
+C2 = 5
+B2 = 45
+N2 = 35
+
+# at waste stream 1 entry point - find new initial Ca, Ba, Na
+Ca = (Qr*Cr + Q1*C1)/(Qr+Q1)
+Ba = (Qr*Br + Q1*B1)/(Qr+Q1)
+Na = (Qr*Nr + Q1*N1)/(Qr+Q1)
+
+# at x = 15km
+# solving for alpha constants that we'll need
+al1 = exp(-ka*15/U)   
+al2 = (kc/(ka-kc))*(exp(-kn*15/U) - exp(-ka*15/U))
+al3 = (kn/(ka-kn))*(exp(-kn*15/U) - exp(-ka*15/U))
+
+# C(15 km), B(15km), N(15km)
+C15 = Cs*(1-al1) + Ca*al1 - Ba*al2 - Na*al3
+B15 = Ba*exp(-kc*15/U)
+N15 = Na*exp(-kn*15/U)
+
+# now find Cb, Bb, Nb values for concentrations in river after waste stream #2
+Cb = ((Qr+Q1)*C15 + Q2*C2)/(Qr+Q1+Q2)
+Bb = ((Qr+Q1)*B15 + Q2*B2)/(Qr+Q1+Q2)
+Nb = ((Qr+Q1)*N15 + Q2*N2)/(Qr+Q1+Q2)
+
+# now, we can set up and save DO concentrations for x = (0,50 km)
+xDist = 0:0.1:50  # distance, [km]
+Cfx = zeros(length(xDist),1)  # setting up vector for DO data storage
+
+for i in 1:length(xDist)
+  x = xDist[i]
+
+  # solving for alpha constants that we'll need
+  al1 = exp(-ka*x/U)   
+  al2 = (kc/(ka-kc))*(exp(-kn*x/U) - exp(-ka*x/U))
+  al3 = (kn/(ka-kn))*(exp(-kn*x/U) - exp(-ka*x/U))
+
+  if x <= 15  # before waste stream 2 enters
+    Cfx[i] = Cs*(1-al1) + Ca*al1 - Ba*al2 - Na*al3
+  else 
+    Cfx[i] = Cs*(1-al1) + Cb*al1 - Bb*al2 - Nb*al3
+  end
+end
+
+using Plots
+plot(xDist,Cfx, title = "D.O. Concentration vs. Distance", xlabel = "Distance, [km]", color= :green, legend = false)
+ylabel!("D.O. Concentration, [mg/L]")
+```
 
 ## Problem 1.1
 
