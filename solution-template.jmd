@@ -17,6 +17,8 @@ Pkg.instantiate()
 ```
 
 # Problem 1
+
+## Problem 1.1
 ```julia
 # setting up variables
 Cs = 10   # sat. DO, [mg/L]
@@ -88,17 +90,196 @@ plot(xDist,Cfx, title = "D.O. Concentration vs. Distance", xlabel = "Distance, [
 ylabel!("D.O. Concentration, [mg/L]")
 ```
 
-## Problem 1.1
-
 ## Problem 1.2
+```julia
+# loop through Cfx vector until we find DO >= 6mg/L
+DOx = Cfx[150]  # approx. where waste stream 2 begins
+x6mgL = 0
+
+for j in 150:length(Cfx)
+  DOx = Cfx[j]
+  global x6mgL
+
+  if DOx >= 6
+    x6mgL = xDist[j]  # obtaining x location
+    break
+  end
+end
+
+# difference downstream from x = 15km
+xDiff = x6mgL - 15
+xDiff = round(xDiff, digits=3)
+
+println("Concentration D.O. recovers to 6 mg/L at x = $x6mgL km")
+println("$xDiff km downstream from where waste stream 2 enters")
+```
 
 ## Problem 1.3
+```julia
+# PROBLEM - my graph goes below 4 mg/L before waste stream 2 enters
+# lowest D.O. occurs where 2 enters
+# therefore we need to make sure that the initial Cb is > 4 mg/L
+
+for E in 0:0.01:1    # E = efficiency of removal, want to loop over to fi
+
+  # waste stream 2
+  Q2 = 15000
+  C2 = (1-E)*5
+  B2 = (1-E)*45
+  N2 = (1-E)*35
+
+  # at x = 15km
+  # solving for alpha constants that we'll need
+  al1 = exp(-ka*15/U)   
+  al2 = (kc/(ka-kc))*(exp(-kn*15/U) - exp(-ka*15/U))
+  al3 = (kn/(ka-kn))*(exp(-kn*15/U) - exp(-ka*15/U))
+
+  # C(15 km), B(15km), N(15km)
+  C15 = Cs*(1-al1) + Ca*al1 - Ba*al2 - Na*al3
+  B15 = Ba*exp(-kc*15/U)
+  N15 = Na*exp(-kn*15/U)
+
+  # now find Cb, Bb, Nb values for concentrations in river after waste stream #2
+  Cb = ((Qr+Q1)*C15 + Q2*C2)/(Qr+Q1+Q2)
+  Bb = ((Qr+Q1)*B15 + Q2*B2)/(Qr+Q1+Q2)
+  Nb = ((Qr+Q1)*N15 + Q2*N2)/(Qr+Q1+Q2)
+
+  if Cb >= 4   # checking if D.O. is maintained above 4
+    global E1
+    E1 = E*100
+    break
+  else
+    global E1
+    E1 = "Not Possible"
+  end
+end
+
+println("A min. removal efficiency of $E1 % is needed in WS 2 to keep [D.O.] > 4mg/L")
+```
+Note, the treatment required says "Not Possible" because no amount of treatment of waste stream 2 can ensure D.O. 
+remains above 4 mg/L. We can also see this in the graph from question 1.1, where the concentration of D.O. 
+dips below 4 mg/L after only the first stream enters.
 
 ## Problem 1.4
+```julia
+# same thing as above, but now with both streams instead of just one
+# since x = 15km is still lowest point, can still just make sure DO here is >= 4mg/L
+
+for f in 0:0.01:1
+
+  # waste stream 1
+  C1 = (1-f)*5
+  B1 = (1-f)*50
+  N1 = (1-f)*35
+
+  # waste stream 2
+  C2 = (1-f)*5
+  B2 = (1-f)*45
+  N2 = (1-f)*35
+
+  # at waste stream 1 entry point - find new initial Ca, Ba, Na
+  Ca = (Qr*Cr + Q1*C1)/(Qr+Q1)
+  Ba = (Qr*Br + Q1*B1)/(Qr+Q1)
+  Na = (Qr*Nr + Q1*N1)/(Qr+Q1)
+
+  # at x = 15km
+  # solving for alpha constants that we'll need
+  al1 = exp(-ka*15/U)   
+  al2 = (kc/(ka-kc))*(exp(-kn*15/U) - exp(-ka*15/U))
+  al3 = (kn/(ka-kn))*(exp(-kn*15/U) - exp(-ka*15/U))
+
+  # C(15 km), B(15km), N(15km)
+  C15 = Cs*(1-al1) + Ca*al1 - Ba*al2 - Na*al3
+  B15 = Ba*exp(-kc*15/U)
+  N15 = Na*exp(-kn*15/U)
+
+  # now find Cb, Bb, Nb values for concentrations in river after waste stream #2
+  Cb = ((Qr+Q1)*C15 + Q2*C2)/(Qr+Q1+Q2)
+  Bb = ((Qr+Q1)*B15 + Q2*B2)/(Qr+Q1+Q2)
+  Nb = ((Qr+Q1)*N15 + Q2*N2)/(Qr+Q1+Q2)
+
+  global C3   # checking if Cb >= 4 mg
+  if Cb >= 4
+    global E2  # efficiency of removal of both streams
+    E2 = f*100 
+    break
+  end
+end
+
+# printing the answer
+println("A min. removal efficiency of $E2 % is needed for both streams to keep [D.O.] > 4mg/L")
+```
 
 ## Problem 1.5
+As of my answers right now, I would opt to treat both streams equally because just treating stream 2 does not 
+prevent the D.O. from dropping below 4 mg/L even after only waste stream 1 has entered. In order to make an accurate 
+conclusion however, we would need to know the nature of the waste sources. Are they factories producing the wastes? 
+Or nonpoint sources from public areas? Or something else? We would need to know who is doing the polluting (or if it's 
+even just one point source that's easily treatable) before we start planning treatment efforts, because we need to know if 
+treatment is even feasible and who we are passing the cost of treatment off onto.
 
 ## Problem 1.6
+```julia
+# create uniform distributions ranging from 4-7 mg/L
+using Distributions 
+N = 100     # sqrt(number of trials)
+CBOD = 4 .+ 3 .*rand(N,1)
+NBOD = 3 .+ 5 .*rand(N,1)
+
+minDO = zeros(N,N)
+k = 0
+
+# pull samples from these distributions
+for i in 1:N
+  for j in 1:N
+    Btrial = CBOD[i]
+    Ntrial = NBOD[j]
+
+    # strategy identified in 1.5 - treating both streams
+    f = 0.40    # min. required efficiency (question 1.5)
+    C1 = (1-f)*5
+    B1 = (1-f)*50
+    N1 = (1-f)*35
+
+    # waste stream 2
+    C2 = (1-f)*5
+    B2 = (1-f)*45
+    N2 = (1-f)*35
+
+    # at waste stream 1 entry point - find new initial Ca, Ba, Na
+    Ca = (Qr*Cr + Q1*C1)/(Qr+Q1)
+    Ba = (Qr*Btrial + Q1*B1)/(Qr+Q1)
+    Na = (Qr*Ntrial + Q1*N1)/(Qr+Q1)
+
+    # at x = 15km
+    # solving for alpha constants that we'll need
+    al1 = exp(-ka*15/U)   
+    al2 = (kc/(ka-kc))*(exp(-kn*15/U) - exp(-ka*15/U))
+    al3 = (kn/(ka-kn))*(exp(-kn*15/U) - exp(-ka*15/U))
+
+    # C(15 km), B(15km), N(15km)
+    C15 = Cs*(1-al1) + Ca*al1 - Ba*al2 - Na*al3
+    B15 = Ba*exp(-kc*15/U)
+    N15 = Na*exp(-kn*15/U)
+
+    # now find DO min. values for concentrations in river at waste stream #2
+    minDO[i,j] = ((Qr+Q1)*C15 + Q2*C2)/(Qr+Q1+Q2)
+
+    # check to see if regulation is not met (treatment fails)
+    if minDO[i,j] < 4
+      global k
+      k = k + 1
+    end
+  end
+end    
+
+# look at sum of trials and calculate % that regulation is not met (>= 4 mg/L)
+Failed = 100*k/(N^2)
+println("Chance that treating both streams with efficiency = 40% removal will fail is $Failed %") 
+
+# scatter plot of min DO values with regulation plotted
+
+```
 
 ## Problem 1.7
 
@@ -125,3 +306,5 @@ end
 ```
 
 # References
+https://discourse.julialang.org/t/why-cant-i-access-the-variable-value-after-a-loop/62860
+https://m3g.github.io/JuliaNotes.jl/stable/loopscopes/ 
