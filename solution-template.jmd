@@ -53,8 +53,8 @@ Na = (Qr*Nr + Q1*N1)/(Qr+Q1)
 # at x = 15km
 # solving for alpha constants that we'll need to calculate C(15km)
 al1 = exp(-ka*14.9/U)   
-al2 = (kc/(ka-kc))*(exp(-kc*14.9/U) - exp(-ka*14.9/U))
-al3 = (kn/(ka-kn))*(exp(-kn*14.9/U) - exp(-ka*14.9/U))
+al2 = (kc/(ka-kc))*(exp(-kc*15/U) - exp(-ka*15/U))
+al3 = (kn/(ka-kn))*(exp(-kn*15/U) - exp(-ka*15/U))
 
 # C(15 km), B(15km), N(15km)
 C15 = Cs*(1-al1) + Ca*al1 - Ba*al2 - Na*al3
